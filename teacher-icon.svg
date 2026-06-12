@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1f7a6d"/>
+  <path d="M138 136h236c18 0 32 14 32 32v200c0 18-14 32-32 32H138c-18 0-32-14-32-32V168c0-18 14-32 32-32Z" fill="#ffffff"/>
+  <path d="M154 184h204M154 232h166M154 280h204" stroke="#1f7a6d" stroke-width="24" stroke-linecap="round"/>
+  <path d="M314 374 406 282l38 38-92 92-52 14 14-52Z" fill="#f4b942"/>
+  <path d="m406 282 18-18c8-8 22-8 30 0l8 8c8 8 8 22 0 30l-18 18-38-38Z" fill="#17202a"/>
+  <text x="256" y="112" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="800" fill="#ffffff">ET</text>
+</svg>
