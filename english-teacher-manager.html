@@ -466,6 +466,17 @@
       white-space: nowrap;
     }
 
+    .contact-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .contact-actions a {
+      min-height: 34px;
+      padding: 7px 10px;
+    }
+
     .empty {
       padding: 32px 14px;
       text-align: center;
@@ -642,6 +653,10 @@
             <div class="panel-body">
               <label>Parent name<input id="parentName" required autocomplete="off"></label>
               <label>Child name<input id="childName" required autocomplete="off"></label>
+              <div class="grid-2">
+                <label>Phone number<input id="phoneNumber" type="tel" autocomplete="tel" placeholder="050-123-4567"></label>
+                <label>Email<input id="email" type="email" autocomplete="email" placeholder="parent@example.com"></label>
+              </div>
               <label>Level<input id="level" placeholder="A1, Grade 6, Conversation..." autocomplete="off"></label>
               <label>Notes<textarea id="customerNotes" placeholder="Learning goals, preferences, contact notes"></textarea></label>
               <button type="submit" id="saveCustomer">Save Customer</button>
@@ -654,7 +669,7 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Parent</th><th>Child</th><th>Level</th><th>Notes</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Parent</th><th>Child</th><th>Contact</th><th>Level</th><th>Notes</th><th>Actions</th></tr></thead>
                 <tbody id="customersTable"></tbody>
               </table>
             </div>
@@ -824,6 +839,29 @@
       return String(value ?? "").replace(/[&<>"']/g, (char) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
       }[char]));
+    }
+
+    function phoneDigits(value) {
+      return String(value || "").replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+    }
+
+    function callHref(phone) {
+      const cleaned = phoneDigits(phone);
+      return cleaned ? `tel:${cleaned}` : "";
+    }
+
+    function whatsAppHref(phone) {
+      const cleaned = phoneDigits(phone).replace(/^\+/, "");
+      const international = cleaned.startsWith("0") ? `972${cleaned.slice(1)}` : cleaned;
+      return international ? `https://wa.me/${international}` : "";
+    }
+
+    function contactButtons(customer) {
+      if (!customer.phone) return "";
+      return `<div class="contact-actions">
+        <a class="button-link" href="${escapeHtml(callHref(customer.phone))}">Call</a>
+        <a class="button-link" href="${escapeHtml(whatsAppHref(customer.phone))}" target="_blank" rel="noopener">Chat</a>
+      </div>`;
     }
 
     function customerName(id) {
@@ -1093,12 +1131,17 @@
     function renderCustomers() {
       const query = $("customerSearch").value.trim().toLowerCase();
       const rows = state.customers.filter((customer) =>
-        [customer.parentName, customer.childName, customer.level, customer.notes].join(" ").toLowerCase().includes(query)
+        [customer.parentName, customer.childName, customer.phone, customer.email, customer.level, customer.notes].join(" ").toLowerCase().includes(query)
       );
       $("customersTable").innerHTML = rows.length ? rows.map((customer) => `
         <tr>
           <td>${escapeHtml(customer.parentName)}</td>
           <td>${escapeHtml(customer.childName)}</td>
+          <td>
+            <div>${escapeHtml(customer.phone || "")}</div>
+            <div>${customer.email ? `<a href="mailto:${escapeHtml(customer.email)}">${escapeHtml(customer.email)}</a>` : ""}</div>
+            ${contactButtons(customer)}
+          </td>
           <td>${escapeHtml(customer.level)}</td>
           <td>${escapeHtml(customer.notes)}</td>
           <td>
@@ -1108,7 +1151,7 @@
             </div>
           </td>
         </tr>
-      `).join("") : `<tr><td colspan="5"><div class="empty">No customers found.</div></td></tr>`;
+      `).join("") : `<tr><td colspan="6"><div class="empty">No customers found.</div></td></tr>`;
     }
 
     function renderPupilPicker(selectedIds = null) {
@@ -1228,6 +1271,8 @@
       editingCustomerId = id;
       $("parentName").value = customer.parentName;
       $("childName").value = customer.childName;
+      $("phoneNumber").value = customer.phone || "";
+      $("email").value = customer.email || "";
       $("level").value = customer.level;
       $("customerNotes").value = customer.notes;
       $("customerFormTitle").textContent = "Edit Customer";
@@ -1301,6 +1346,8 @@
         id: editingCustomerId || uid(),
         parentName: $("parentName").value.trim(),
         childName: $("childName").value.trim(),
+        phone: $("phoneNumber").value.trim(),
+        email: $("email").value.trim(),
         level: $("level").value.trim(),
         notes: $("customerNotes").value.trim()
       };
