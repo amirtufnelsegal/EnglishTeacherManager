@@ -657,7 +657,10 @@
                 <label>Phone number<input id="phoneNumber" type="tel" autocomplete="tel" placeholder="050-123-4567"></label>
                 <label>Email<input id="email" type="email" autocomplete="email" placeholder="parent@example.com"></label>
               </div>
-              <label>Level<input id="level" placeholder="A1, Grade 6, Conversation..." autocomplete="off"></label>
+              <div class="grid-2">
+                <label>Status<select id="customerStatus"><option>Lead</option><option selected>Active</option><option>Not Active</option></select></label>
+                <label>Level<input id="level" placeholder="A1, Grade 6, Conversation..." autocomplete="off"></label>
+              </div>
               <label>Notes<textarea id="customerNotes" placeholder="Learning goals, preferences, contact notes"></textarea></label>
               <button type="submit" id="saveCustomer">Save Customer</button>
             </div>
@@ -665,11 +668,19 @@
           <div class="panel">
             <div class="panel-head">
               <h2>Customer List</h2>
-              <div class="toolbar"><input id="customerSearch" placeholder="Search customers"></div>
+              <div class="toolbar">
+                <input id="customerSearch" placeholder="Search customers">
+                <select id="customerStatusFilter">
+                  <option value="all">All statuses</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Active">Active</option>
+                  <option value="Not Active">Not Active</option>
+                </select>
+              </div>
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Parent</th><th>Child</th><th>Contact</th><th>Level</th><th>Notes</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Parent</th><th>Child</th><th>Status</th><th>Contact</th><th>Level</th><th>Notes</th><th>Actions</th></tr></thead>
                 <tbody id="customersTable"></tbody>
               </table>
             </div>
@@ -1130,13 +1141,18 @@
 
     function renderCustomers() {
       const query = $("customerSearch").value.trim().toLowerCase();
-      const rows = state.customers.filter((customer) =>
-        [customer.parentName, customer.childName, customer.phone, customer.email, customer.level, customer.notes].join(" ").toLowerCase().includes(query)
-      );
+      const statusFilter = $("customerStatusFilter").value;
+      const rows = state.customers.filter((customer) => {
+        const status = customer.status || "Active";
+        const matchesStatus = statusFilter === "all" || status === statusFilter;
+        const matchesQuery = [customer.parentName, customer.childName, status, customer.phone, customer.email, customer.level, customer.notes].join(" ").toLowerCase().includes(query);
+        return matchesStatus && matchesQuery;
+      });
       $("customersTable").innerHTML = rows.length ? rows.map((customer) => `
         <tr>
           <td>${escapeHtml(customer.parentName)}</td>
           <td>${escapeHtml(customer.childName)}</td>
+          <td><span class="badge ${customer.status === "Not Active" ? "unpaid" : customer.status === "Lead" ? "warn" : "paid"}">${escapeHtml(customer.status || "Active")}</span></td>
           <td>
             <div>${escapeHtml(customer.phone || "")}</div>
             <div>${customer.email ? `<a href="mailto:${escapeHtml(customer.email)}">${escapeHtml(customer.email)}</a>` : ""}</div>
@@ -1151,7 +1167,7 @@
             </div>
           </td>
         </tr>
-      `).join("") : `<tr><td colspan="6"><div class="empty">No customers found.</div></td></tr>`;
+      `).join("") : `<tr><td colspan="7"><div class="empty">No customers found.</div></td></tr>`;
     }
 
     function renderPupilPicker(selectedIds = null) {
@@ -1159,7 +1175,7 @@
       $("pupilPicker").innerHTML = state.customers.length ? state.customers.map((customer) => `
         <label class="check-row">
           <input type="checkbox" value="${customer.id}" ${selected.includes(customer.id) ? "checked" : ""}>
-          <span>${escapeHtml(customer.childName)} <span class="muted">(${escapeHtml(customer.parentName)} - ${escapeHtml(customer.level || "No level")})</span></span>
+          <span>${escapeHtml(customer.childName)} <span class="muted">(${escapeHtml(customer.parentName)} - ${escapeHtml(customer.status || "Active")} - ${escapeHtml(customer.level || "No level")})</span></span>
         </label>
       `).join("") : `<div class="muted">Add customers before scheduling lessons.</div>`;
       document.querySelectorAll("#pupilPicker input").forEach((input) => input.addEventListener("change", renderPaymentEditor));
@@ -1273,6 +1289,7 @@
       $("childName").value = customer.childName;
       $("phoneNumber").value = customer.phone || "";
       $("email").value = customer.email || "";
+      $("customerStatus").value = customer.status || "Active";
       $("level").value = customer.level;
       $("customerNotes").value = customer.notes;
       $("customerFormTitle").textContent = "Edit Customer";
@@ -1348,6 +1365,7 @@
         childName: $("childName").value.trim(),
         phone: $("phoneNumber").value.trim(),
         email: $("email").value.trim(),
+        status: $("customerStatus").value,
         level: $("level").value.trim(),
         notes: $("customerNotes").value.trim()
       };
@@ -1393,6 +1411,7 @@
     $("cancelCustomerEdit").addEventListener("click", resetCustomerForm);
     $("cancelLessonEdit").addEventListener("click", resetLessonForm);
     $("customerSearch").addEventListener("input", renderCustomers);
+    $("customerStatusFilter").addEventListener("change", renderCustomers);
     $("lessonSearch").addEventListener("input", renderLessons);
     $("lessonFilter").addEventListener("change", renderLessons);
     $("paymentSearch").addEventListener("input", renderPayments);
